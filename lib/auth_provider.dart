@@ -1,17 +1,34 @@
 import 'package:flutter/material.dart';
 
 class AuthProvider with ChangeNotifier {
-  bool _isUserLoggedIn = false;
+  String _username = '';
+  String _level = '';
+  late String _userRole; // Tambahkan _userRole
 
-  bool get isUserLoggedIn => _isUserLoggedIn;
+  String get username => _username;
+  String get level => _level;
+  String get userRole => _userRole; // Getter untuk mendapatkan _userRole
 
-  void loginUser() {
-    _isUserLoggedIn = true;
+  bool get isUserLoggedIn => _username.isNotEmpty;
+
+  void loginUser(String username, String level) {
+    _username = username;
+    _level = level;
     notifyListeners();
   }
 
   void logoutUser() {
-    _isUserLoggedIn = false;
+    _username = '';
+    _level = '';
+    _userRole = ''; // Kosongkan _userRole saat logout
+    notifyListeners();
+  }
+
+  bool get isAdmin => _level == 'admin';
+  bool get isTendik => _level == 'tendik';
+
+  void setUserRole(String role) {
+    _userRole = role;
     notifyListeners();
   }
 }

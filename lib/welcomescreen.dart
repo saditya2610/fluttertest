@@ -1,37 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/Admin/AdminScreen.dart';
 import 'package:flutter_application_1/LoginScreen.dart';
+import 'package:flutter_application_1/Tendik/TendikScreen.dart';
+import 'package:flutter_application_1/auth_provider.dart';
 import 'package:flutter_application_1/main.dart';
+import 'package:provider/provider.dart';
 import 'BottomBarScreen.dart';
 
 class WelcomeScreen extends StatelessWidget {
-  final String username;
-  final String level;
-
-  WelcomeScreen(this.username, this.level);
-
-void main() {
-  runApp(
-MaterialApp(
-      title: 'Flutter Dashboard Test Aing',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
-      ),
-      home:  const BottomBarScreen() ,
-      routes: {
-        '/dashboard': (context) => const DashboardDetailsScreen(),
-        '/grafik': (context) => const GrafikScreen(),
-        '/jam_absensi': (context) => const JamAbsensiScreen(),
-        '/kalender': (context) => const KalenderScreen(),
-        '/profil': (context) => const ProfilScreen(),
-        '/dashboard_details': (context) => const DashboardDetailsScreen(),
-      },
-    ),
-  );
+  void redirectToDashboard(BuildContext context, AuthProvider authProvider) {
+  if (authProvider.level == 'admin') {
+    Navigator.pushReplacementNamed(context, '/admin');
+  } else if (authProvider.level == 'tendik') {
+    Navigator.pushReplacementNamed(context, '/tendik');
+  } else {
+    // Handle other roles or unexpected cases
+    print('Unknown user role');
+  }
 }
-
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color.fromARGB(255, 189, 2, 2),
@@ -41,27 +31,23 @@ MaterialApp(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('Selamat Datang, $username!'),
-            Text('Kamu Login Sebagai $level.'),
+            Text('Selamat Datang, ${authProvider.username}!'),
+            Text('Kamu Login Sebagai ${authProvider.level}.'),
             ElevatedButton(
               onPressed: () {
+                authProvider.logoutUser();
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context)=> LoginScreen()
-                    ),
-                  ); // Close WelcomeScreen
+                    builder: (context) => LoginScreen(),
+                  ),
+                );
               },
               child: Text('Logout'),
             ),
             ElevatedButton(
               onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DashboardScreen(),
-                  ),
-                );
+                redirectToDashboard(context, authProvider);
               },
               child: Text('Buka Dashboard'),
             ),

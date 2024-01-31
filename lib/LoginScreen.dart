@@ -4,7 +4,7 @@ import 'package:flutter_application_1/welcomescreen.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
-import 'auth_provider.dart'; // Import the AuthProvider
+import 'auth_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({Key? key}) : super(key: key);
@@ -18,7 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
 
   Future<void> loginUser(BuildContext context) async {
-    final apiUrl = 'http://192.168.1.105/buku/php/login.php'; // Update with your login API endpoint
+    final apiUrl = 'http://10.223.43.205/buku/php/login.php'; // Update with your login API endpoint
 
     try {
       final response = await http.post(
@@ -41,15 +41,11 @@ class _LoginScreenState extends State<LoginScreen> {
             showSnackBar(context, 'Login Berhasil');
 
             // Access the AuthProvider and update the login state
-            Provider.of<AuthProvider>(context, listen: false).loginUser();
+            Provider.of<AuthProvider>(context, listen: false)
+                .loginUser(data['data']['username'], data['data']['level']);
 
-            // Navigate to the welcome page
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => WelcomeScreen(data['data']['username'], data['data']['level']),
-              ),
-            );
+            // Redirect to the appropriate screen based on user role
+            _redirectToScreen(context, data['data']['level']);
           } else {
             print('Login Gagal. Message: ${data['message']}');
             showSnackBar(context, 'Login Gagal. ${data['message']}');
@@ -60,20 +56,11 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       } else {
         print('API request failed. Status: ${response.statusCode}, Message: ${response.body}');
-        showSnackBar(context, 'Cek Username Dan Password Anda.');
+        showSnackBar(context, 'Cek Username dan Password Anda.');
       }
     } catch (e) {
       print('Error: $e');
       showSnackBar(context, 'An error occurred during login.');
-    }
-  }
-
-  bool isValidJson(String input) {
-    try {
-      jsonDecode(input);
-      return true;
-    } catch (e) {
-      return false;
     }
   }
 
@@ -83,6 +70,21 @@ class _LoginScreenState extends State<LoginScreen> {
         content: Text(message),
       ),
     );
+  }
+
+  void _redirectToScreen(BuildContext context, String userRole) {
+    // Redirect to the appropriate screen based on user role
+    switch (userRole) {
+      case 'admin':
+        Navigator.pushReplacementNamed(context, '/admin');
+        break;
+      case 'tendik':
+        Navigator.pushReplacementNamed(context, '/tendik');
+        break;
+      default:
+        // Handle other roles or unexpected cases
+        print('Tidak diketahui user role');
+    }
   }
 
   @override

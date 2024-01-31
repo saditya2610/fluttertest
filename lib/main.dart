@@ -1,10 +1,14 @@
+// Import statements
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
+import 'auth_provider.dart';
+import 'Admin/AdminScreen.dart';
+import 'Tendik/TendikScreen.dart';
 import 'LoginScreen.dart';
 import 'BottomBarScreen.dart';
-import 'auth_provider.dart'; // Create a new file auth_provider.dart
-
 
 void main() {
   runApp(
@@ -13,17 +17,20 @@ void main() {
       child: MaterialApp(
         title: 'Flutter Dashboard Test Aing',
         theme: ThemeData(
+          fontFamily: "Poppins",
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
         home: MyApp(),
         routes: {
+          '/admin': (context) => const AdminScreen(),
+          '/tendik': (context) => const TendikScreen(),
+          '/login': (context) => const LoginScreen(),
           '/dashboard': (context) => const DashboardScreen(),
           '/grafik': (context) => const GrafikScreen(),
           '/jam_absensi': (context) => const JamAbsensiScreen(),
           '/kalender': (context) => const KalenderScreen(),
           '/profil': (context) => const ProfilScreen(),
-          '/login': (context) => const LoginScreen(),
           '/dashboard_details': (context) => const DashboardDetailsScreen(),
         },
       ),
@@ -43,8 +50,56 @@ class MyApp extends StatelessWidget {
 class DashboardScreen extends StatelessWidget {
   const DashboardScreen({Key? key}) : super(key: key);
 
+   Widget _buildCard(BuildContext context, String title, IconData icon, bool isAdmin) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
+    if ((isAdmin && authProvider.isAdmin) || (!isAdmin && !authProvider.isAdmin)) {
+      return Card(
+        elevation: 5.0,
+        child: InkWell(
+          onTap: () {
+            Navigator.pushNamed(context, '/dashboard_details', arguments: title);
+          },
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Icon(
+                icon,
+                size: 50.0,
+                color: Colors.blue,
+              ),
+              const SizedBox(height: 8.0),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    } else {
+      // Return an empty container if the card is not applicable for the user's role
+      return Container();
+    }
+  }
+
+  Widget _buildDrawerItem(BuildContext context, String title, IconData icon, String route) {
+    return ListTile(
+      leading: Icon(icon, color: const Color.fromARGB(255, 19, 19, 19)),
+      title: Text(title, style: const TextStyle(color: Color.fromARGB(255, 23, 23, 23))),
+      onTap: () {
+        Navigator.of(context, rootNavigator: true).pop(); // Safe pop
+        Navigator.pushNamed(context, route);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('UNIVRABSDM', style: TextStyle(color: Colors.white)),
@@ -71,10 +126,23 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
             _buildDrawerItem(context, 'Beranda', Icons.home, '/dashboard'),
-            _buildDrawerItem(context, 'Dashboard', Icons.dashboard, '/dashboard'),
-            _buildDrawerItem(context, 'Jam Absensi', Icons.access_alarms_outlined, '/jam_absensi'),
+            if (authProvider.level == 'admin') // Show only for admin level
+              _buildDrawerItem(context, 'Dashboard', Icons.dashboard, '/dashboard'),
+            if (authProvider.level == 'admin') // Show only for admin level
+              _buildDrawerItem(context, 'Data Absen', Icons.graphic_eq, '/data_absen'),
+            if (authProvider.level == 'admin') // Show only for admin level
+              _buildDrawerItem(context, 'Manajemen User', Icons.supervised_user_circle, '/manajemen_user'),
+            if (authProvider.level == 'admin') // Show only for admin level
+              _buildDrawerItem(context, 'Data Karyawan', Icons.people, '/data_karyawan'),
+            if (authProvider.level != 'admin') // Show only for non-admin levels
+              _buildDrawerItem(context, 'Jam Absensi', Icons.access_alarms_outlined, '/jam_absensi'),
+            if (authProvider.level != 'admin') // Show only for non-admin levels
+              _buildDrawerItem(context, 'Profil', Icons.person, '/profil'),
+            if (authProvider.level != 'admin') // Show only for non-admin levels
+              _buildDrawerItem(context, 'Kalender', Icons.calendar_today, '/kalender'),
             _buildDrawerItem(context, 'Login', Icons.login, '/login'),
-            _buildDrawerItem(context, 'Keluar', Icons.exit_to_app, '/keluar'),
+            if (authProvider.level == 'admin') // Show only for admin level
+              _buildDrawerItem(context, 'Keluar', Icons.exit_to_app, '/keluar'),
           ],
         ),
       ),
@@ -92,17 +160,22 @@ class DashboardScreen extends StatelessWidget {
           crossAxisSpacing: 16.0,
           mainAxisSpacing: 8.0,
           children: <Widget>[
-            _buildCard(context, 'Dashboard', Icons.dashboard),
-            _buildCard(context, 'Data Absen', Icons.graphic_eq),
-            _buildCard(context, 'Kalender', Icons.calendar_today),
-            _buildCard(context, 'Profil', Icons.person),
+            _buildCard(context, 'Dashboard', Icons.dashboard, true),
+            _buildCard(context, 'Data Absen', Icons.graphic_eq, true),
+            _buildCard(context, 'Manajemen User', Icons.supervised_user_circle, true),
+            _buildCard(context, 'Data Karyawan', Icons.people, true),
+            _buildCard(context, 'Jam Absensi', Icons.access_alarms_outlined, false),
+            _buildCard(context, 'Profil', Icons.person, false),
+            _buildCard(context, 'Kalender', Icons.calendar_today, false),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildCard(BuildContext context, String title, IconData icon) {
+  Widget _buildAdminCard(BuildContext context, String title, IconData icon) {
+    // Customize cards for Admin role
     return Card(
       elevation: 5.0,
       child: InkWell(
@@ -130,17 +203,34 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  ListTile _buildDrawerItem(BuildContext context, String title, IconData icon, String route) {
-    return ListTile(
-      leading: Icon(icon, color: const Color.fromARGB(255, 19, 19, 19)),
-      title: Text(title, style: const TextStyle(color: Color.fromARGB(255, 23, 23, 23))),
-      onTap: () {
-        Navigator.pop(context);
-        Navigator.pushNamed(context, route);
-      },
+  Widget _buildDefaultCard(BuildContext context, String title, IconData icon) {
+    // Default card for unknown user roles
+    return Card(
+      elevation: 5.0,
+      child: InkWell(
+        onTap: () {
+          Navigator.pushNamed(context, '/dashboard_details', arguments: title);
+        },
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Icon(
+              icon,
+              size: 50.0,
+              color: Colors.blue,
+            ),
+            const SizedBox(height: 8.0),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
     );
   }
-}
 
 class DashboardDetailsScreen extends StatelessWidget {
   const DashboardDetailsScreen({Key? key}) : super(key: key);
@@ -168,6 +258,7 @@ class DashboardDetailsScreen extends StatelessWidget {
     );
   }
 }
+
 
 class GrafikScreen extends StatelessWidget {
   const GrafikScreen({Key? key}) : super(key: key);
@@ -220,6 +311,7 @@ class KalenderScreen extends StatelessWidget {
     );
   }
 }
+
 
 class ProfilScreen extends StatelessWidget {
   const ProfilScreen({Key? key}) : super(key: key);
